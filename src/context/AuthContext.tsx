@@ -127,13 +127,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     provider.setCustomParameters({ prompt: 'select_account' });
     
     try {
-      console.log("Attempting Google Sign-In with Popup...");
+      console.log("Attempting Google Sign-In with Popup...", { authDomain: auth.config.authDomain });
       const result = await signInWithPopup(auth, provider);
+      console.log("Google Sign-In Popup Success:", result.user.uid);
       if (result.user) {
         await syncAccount(result.user);
       }
     } catch (error: any) {
-      console.warn("Popup login failed or was blocked, falling back to redirect...", error);
+      console.warn("Popup login failed or was blocked:", error.code, error.message);
       
       // Handle potential cross-origin or popup blocked errors
       if (
@@ -141,17 +142,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         error.code === 'auth/cancelled-popup-request' ||
         error.code === 'auth/popup-closed-by-user' ||
         error.code === 'auth/network-request-failed' ||
-        error.code === 'auth/internal-error'
+        error.code === 'auth/internal-error' ||
+        error.code === 'auth/web-storage-unsupported'
       ) {
         try {
           console.log("Attempting Google Sign-In with Redirect...");
           await signInWithRedirect(auth, provider);
-        } catch (redirectError) {
-          console.error("Redirect login failed:", redirectError);
+        } catch (redirectError: any) {
+          console.error("Redirect login failed:", redirectError.code, redirectError.message);
           throw redirectError;
         }
       } else {
-        console.error("Google Sign-In Error:", error);
+        console.error("Critical Google Sign-In Error:", error.code, error.message);
         throw error;
       }
     }

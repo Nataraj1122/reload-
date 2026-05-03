@@ -62,11 +62,15 @@ export default function CustomerAuthModal({ isOpen, onClose }: CustomerAuthModal
       // AuthContext handles the sync and the redirect fallback
       onClose();
     } catch (err: any) {
-      console.error(err);
+      console.error("Google Login Error:", err);
       if (err.code === 'auth/popup-blocked') {
-        setError('Popup blocked. Please enable popups or try again (redirect might start).');
+        setError('Popup blocked. Please enable popups or try clicking again for redirect.');
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        setError('Login cancelled (popup closed).');
+      } else if (err.code === 'auth/cancelled-popup-request') {
+        setError('Login request cancelled.');
       } else {
-        setError('Failed to authenticate with Google. Please try again.');
+        setError(`Auth Error: ${err.message || 'Unknown error'}. Try opening the site in a new tab if you are using an iframe.`);
       }
     } finally {
        setLoading(false);
@@ -165,7 +169,15 @@ export default function CustomerAuthModal({ isOpen, onClose }: CustomerAuthModal
 
         {error && (
             <div className="mb-6 p-4 bg-red-50 text-red-600 border border-red-100 text-[11px] uppercase tracking-widest font-bold text-center leading-relaxed">
-              {error}
+              <p className="mb-2">{error}</p>
+              <a 
+                href={window.location.href} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="underline hover:text-red-800"
+              >
+                Try opening in a new tab
+              </a>
             </div>
         )}
 
