@@ -63,7 +63,7 @@ export default function Home() {
 
   return (
     <div className="bg-brand-bone overflow-x-hidden">
-      {/* Hero Section - Reload Full Screen */}
+      {/* Hero Section - Premium Centered */}
       <section ref={heroRef} className="relative h-screen w-full bg-black overflow-hidden flex items-center justify-center">
         {/* MAIN IMAGE */}
         <motion.div 
@@ -72,40 +72,44 @@ export default function Home() {
         >
           <img 
             src={IMAGES.hero} 
-            alt="Reload Hero"
-            className="w-full h-full object-contain"
+            alt="Reload Premium Fashion"
+            className="w-full h-full object-cover object-bottom grayscale-[20%] brightness-[0.7]"
           />
-          {/* overlay */}
-          <div className="absolute inset-0 bg-black/40"></div>
+          {/* subtle dark gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-black/70"></div>
         </motion.div>
 
-        {/* HERO CONTENT */}
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-end text-center px-6 pb-20">
+        {/* HERO CONTENT - CENTERED */}
+        <div className="relative z-10 flex flex-col items-center justify-center text-center px-6">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
             className="flex flex-col items-center"
           >
-            <p className="text-white text-[14px] uppercase tracking-[3px] font-bold mb-[20px]">
+            <h1 className="text-white text-6xl md:text-9xl font-sans font-bold tracking-tighter mb-2 leading-none">
+              RELOAD
+            </h1>
+            <p className="text-white/80 text-[10px] md:text-xs uppercase tracking-[0.8em] font-medium mb-12 ml-[0.8em]">
               PREMIUM MENSWEAR
             </p>
             <button 
               onClick={() => document.getElementById('trending')?.scrollIntoView({ behavior: 'smooth' })}
-              className="px-[30px] py-[12px] bg-white text-black rounded-[30px] font-bold uppercase text-[12px] transition-all hover:scale-105 active:scale-95"
+              className="px-12 py-4 rounded-full bg-white text-black font-bold uppercase text-[10px] tracking-[0.3em] shadow-2xl hover:bg-black hover:text-white transition-all duration-500 active:scale-95 group relative overflow-hidden"
             >
-              SHOP NOW
+              <span className="relative z-10">SHOP NOW</span>
+              <div className="absolute inset-0 bg-black translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
             </button>
           </motion.div>
         </div>
 
         <motion.div 
           initial={{ opacity: 0 }}
-          animate={{ opacity: 0.5 }}
+          animate={{ opacity: 0.4 }}
           transition={{ delay: 2, duration: 1 }}
           className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 z-10"
         >
-          <div className="w-px h-20 bg-gradient-to-b from-white to-transparent opacity-30"></div>
+          <div className="w-px h-16 bg-gradient-to-b from-white to-transparent opacity-50"></div>
         </motion.div>
       </section>
 
