@@ -10,7 +10,7 @@ import { ProductSkeleton, CategorySkeleton } from '../components/Skeleton';
 import ProductCard from '../components/ProductCard';
 
 const IMAGES = {
-  hero: "https://i.pinimg.com/originals/cf/12/81/cf12814d8f31383e096a20150c5b9fbc.jpg",
+  hero: "https://i.ibb.co/1hBp929/13733681-2435-4874-8009-331bfceb1b58.jpg",
   autumn: "https://lh3.googleusercontent.com/aida/ADBb0ugepjQaXljnUR7WRHCi9bjT-gSW1VD93hSEfHTzWldq2nnDKMtK5D1U58bqgR5Uc7Yuu2bNoR00-I6Ghy3K-Avl1HlGdTfkSvEx-V0k1uO3pA_Nt0GfS2GqG2eJNkiLXq4YL-C0QDezMT-C0JydFkEsXS62Po5QdM259YqRZF_ugNP7RRxwaTESKexEOnRL2Z7cJJ7eh2dwcPzxxQK2ABALjKCztSU8gaZR91o_ay871gfwux7tdyIQJbuE6KJ2-JBc6sebBbMPVQ",
   dolenga: "https://i.pinimg.com/736x/18/22/96/182296e7cfa5cd168a47a34e872b82e1.jpg",
   summer: "https://lh3.googleusercontent.com/aida/ADBb0ugepjQaXljnUR7WRHCi9bjT-gSW1VD93hSEfHTzWldq2nnDKMtK5D1U58bqgR5Uc7Yuu2bNoR00-I6Ghy3K-Avl1HlGdTfkSvEx-V0k1uO3pA_Nt0GfS2GqG2eJNkiLXq4YL-C0QDezMT-C0JydFkEsXS62Po5QdM259YqRZF_ugNP7RRxwaTESKexEOnRL2Z7cJJ7eh2dwcPzxxQK2ABALjKCztSU8gaZR91o_ay871gfwux7tdyIQJbuE6KJ2-JBc6sebBbMPVQ"
@@ -64,7 +64,7 @@ export default function Home() {
   return (
     <div className="bg-brand-bone overflow-x-hidden">
       {/* Hero Section - Premium Centered */}
-      <section ref={heroRef} className="relative h-screen w-full bg-black overflow-hidden flex items-center justify-center">
+      <section ref={heroRef} className="relative h-screen w-full bg-black overflow-hidden">
         {/* MAIN IMAGE */}
         <motion.div 
           style={{ opacity: heroOpacity, y: heroY, scale: heroScale }}
@@ -73,29 +73,26 @@ export default function Home() {
           <img 
             src={IMAGES.hero} 
             alt="Reload Premium Fashion"
-            className="w-full h-full object-cover object-bottom grayscale-[20%] brightness-[0.7]"
+            className="w-full h-full object-contain"
           />
-          {/* subtle dark gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-black/70"></div>
+          {/* overlay */}
+          <div className="absolute inset-0 bg-black/40"></div>
         </motion.div>
 
-        {/* HERO CONTENT - CENTERED */}
-        <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 min-h-screen">
+        {/* HERO CONTENT - BOTTOM POSITIONED */}
+        <div className="absolute bottom-[80px] left-0 w-full z-10 flex flex-col items-center text-center px-6">
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
             className="flex flex-col items-center"
           >
-            <h1 className="text-white text-6xl md:text-[10rem] font-sans font-bold tracking-tighter mb-4 leading-none">
-              RELOAD
-            </h1>
-            <p className="text-white/80 text-[10px] md:text-sm uppercase tracking-[0.8em] font-medium mb-16 ml-[0.8em]">
+            <p className="text-white text-[14px] uppercase tracking-[3px] font-bold mb-[20px]">
               PREMIUM MENSWEAR
             </p>
             <button 
               onClick={() => document.getElementById('trending')?.scrollIntoView({ behavior: 'smooth' })}
-              className="px-16 py-5 rounded-full bg-white text-black font-bold uppercase text-[11px] tracking-[0.3em] shadow-2xl hover:bg-black hover:text-white transition-all duration-500 active:scale-95 translate-y-4"
+              className="px-[30px] py-[12px] bg-white text-black rounded-[30px] font-bold uppercase text-[12px] transition-all hover:scale-105 active:scale-95"
             >
               SHOP NOW
             </button>
