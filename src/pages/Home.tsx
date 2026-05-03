@@ -10,9 +10,9 @@ import { ProductSkeleton, CategorySkeleton } from '../components/Skeleton';
 import ProductCard from '../components/ProductCard';
 
 const IMAGES = {
-  hero: "https://lh3.googleusercontent.com/aida/ADBb0uh7L9P2M6Kk9L0_D6c_xJ_Z_R_K_Y_W_P_L_Y_W_P_L_Y_W_P_L_Y_W_P_L", // Placeholder if not found
+  hero: "https://i.pinimg.com/736x/cf/12/81/cf12814d8f31383e096a20150c5b9fbc.jpg",
   autumn: "https://lh3.googleusercontent.com/aida/ADBb0ugepjQaXljnUR7WRHCi9bjT-gSW1VD93hSEfHTzWldq2nnDKMtK5D1U58bqgR5Uc7Yuu2bNoR00-I6Ghy3K-Avl1HlGdTfkSvEx-V0k1uO3pA_Nt0GfS2GqG2eJNkiLXq4YL-C0QDezMT-C0JydFkEsXS62Po5QdM259YqRZF_ugNP7RRxwaTESKexEOnRL2Z7cJJ7eh2dwcPzxxQK2ABALjKCztSU8gaZR91o_ay871gfwux7tdyIQJbuE6KJ2-JBc6sebBbMPVQ",
-  dolenga: "https://lh3.googleusercontent.com/aida/ADBb0uh61mtIFxacblFU2-Zru9FzSgEDryN4NkNm5uRPld9Hm0eOunRppsbWIcZyCp2PHie4m_ijO_5fI81cUm3XR0Tv92c1Lqkfc9Y4Ek0maA_xafflF5_lNtTcRRQKCoxX5oIhB8WRE0dFdqLLmb575bKIiQ_G7TEexeJVGWAWOHS0vfiM3ysUeM0XLyoeBTuy-m95ck4q6bJ2PbV3WBWVuoF6Yo_-3SYN-TBv2gjQOt9rtV6OXQRziDAIr4jfabuWZd3b6dW3YWRjdw",
+  dolenga: "https://i.pinimg.com/736x/18/22/96/182296e7cfa5cd168a47a34e872b82e1.jpg",
   summer: "https://lh3.googleusercontent.com/aida/ADBb0ugepjQaXljnUR7WRHCi9bjT-gSW1VD93hSEfHTzWldq2nnDKMtK5D1U58bqgR5Uc7Yuu2bNoR00-I6Ghy3K-Avl1HlGdTfkSvEx-V0k1uO3pA_Nt0GfS2GqG2eJNkiLXq4YL-C0QDezMT-C0JydFkEsXS62Po5QdM259YqRZF_ugNP7RRxwaTESKexEOnRL2Z7cJJ7eh2dwcPzxxQK2ABALjKCztSU8gaZR91o_ay871gfwux7tdyIQJbuE6KJ2-JBc6sebBbMPVQ"
 };
 
@@ -66,32 +66,35 @@ export default function Home() {
       <section ref={heroRef} className="relative h-screen w-full bg-black overflow-hidden flex items-center justify-center">
         {/* MAIN IMAGE */}
         <motion.div 
-          style={{ opacity: heroOpacity }}
-          className="absolute inset-0 w-full h-full flex items-center justify-center"
+          style={{ opacity: heroOpacity, y: heroY }}
+          className="absolute inset-0 w-full h-full"
         >
           <img 
-            src="https://i.ibb.co/1hBp929/13733681-2435-4874-8009-331bfceb1b58.jpg" 
+            src={IMAGES.hero} 
             alt="Reload Hero"
-            className="w-full h-full object-contain"
+            className="w-full h-full object-cover object-center"
           />
           {/* overlay */}
           <div className="absolute inset-0 bg-black/40"></div>
         </motion.div>
 
         {/* HERO CONTENT */}
-        <div className="absolute bottom-20 w-full z-10 flex flex-col items-center text-center px-6">
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
             className="flex flex-col items-center"
           >
-            <p className="text-white text-[13px] md:text-sm uppercase tracking-[0.3em] font-medium mb-8">
+            <h1 className="text-white text-5xl md:text-8xl font-sans font-bold tracking-tighter mb-4">
+              RELOAD
+            </h1>
+            <p className="text-white text-[11px] md:text-sm uppercase tracking-[0.5em] font-medium mb-12 opacity-80">
               PREMIUM MENSWEAR
             </p>
             <button 
               onClick={() => document.getElementById('trending')?.scrollIntoView({ behavior: 'smooth' })}
-              className="px-10 py-3 rounded-full bg-white text-black font-bold uppercase text-[11px] tracking-[0.15em] shadow-2xl hover:bg-black hover:text-white transition-all duration-500 active:scale-95"
+              className="px-12 py-4 rounded-full bg-white text-black font-bold uppercase text-[11px] tracking-[0.2em] shadow-2xl hover:bg-black hover:text-white transition-all duration-500 active:scale-95"
             >
               SHOP NOW
             </button>
@@ -218,7 +221,7 @@ export default function Home() {
             className="flex flex-col items-center"
           >
             <h3 className="text-4xl md:text-8xl font-serif mb-6 md:mb-10 leading-tight tracking-tight max-w-4xl">
-              Modern Luxury <br className="md:hidden" /> Redefined
+              Dolenga Modernity
             </h3>
             <button 
               onClick={() => navigate('/shop')}
