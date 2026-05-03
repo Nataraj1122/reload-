@@ -19,6 +19,7 @@ interface AuthContextType {
   loading: boolean;
   logout: () => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  syncAccount: (user: User, additionalData?: any) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -27,6 +28,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   logout: async () => {},
   loginWithGoogle: async () => {},
+  syncAccount: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -35,17 +37,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   // Sync user data to Firestore
-  const syncUser = async (user: User) => {
+  const syncAccount = async (user: User, additionalData: any = {}) => {
     try {
       const userRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userRef);
       
+      const basicData = {
+        uid: user.uid,
+        name: user.displayName || additionalData.name || 'Anonymous',
+        email: user.email || additionalData.email || '',
+        phone: user.phoneNumber || additionalData.phone || '',
+        updatedAt: serverTimestamp(),
+      };
+
       if (!userDoc.exists()) {
         // First login: create user document
         await setDoc(userRef, {
-          uid: user.uid,
-          name: user.displayName || 'Anonymous',
-          email: user.email,
+          ...basicData,
+          totalOrders: 0,
+          totalSpent: 0,
+          role: 'customer',
           createdAt: serverTimestamp(),
           lastLogin: serverTimestamp(),
         });
@@ -53,16 +64,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         // Subsequent logins: update last login time and basic info
         await setDoc(userRef, {
-          uid: user.uid,
-          name: user.displayName || 'Anonymous',
-          email: user.email,
+          ...basicData,
           lastLogin: serverTimestamp(),
         }, { merge: true });
         console.log("User lastLogin synced to Firestore:", user.uid);
       }
     } catch (error) {
       console.error("Error syncing user to Firestore:", error);
-      handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
+      // Don't throw here to avoid blocking the whole app if sync fails
     }
   };
 
@@ -70,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Handle redirect result on mount
     getRedirectResult(auth).then((result) => {
       if (result?.user) {
-        syncUser(result.user);
+        syncAccount(result.user);
       }
     }).catch((error) => {
       console.error("Error handling redirect result:", error);
@@ -79,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user) {
-        syncUser(user);
+        syncAccount(user);
         // First check hardcoded email for immediate access
         const isAuthAdmin = user.email === ADMIN_EMAIL;
         
@@ -119,7 +128,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     try {
       console.log("Attempting Google Sign-In with Popup...");
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      if (result.user) {
+        await syncAccount(result.user);
+      }
     } catch (error: any) {
       console.warn("Popup login failed or was blocked, falling back to redirect...", error);
       
@@ -128,7 +140,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         error.code === 'auth/popup-blocked' || 
         error.code === 'auth/cancelled-popup-request' ||
         error.code === 'auth/popup-closed-by-user' ||
-        error.code === 'auth/network-request-failed'
+        error.code === 'auth/network-request-failed' ||
+        error.code === 'auth/internal-error'
       ) {
         try {
           console.log("Attempting Google Sign-In with Redirect...");
@@ -145,7 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, loading, logout, loginWithGoogle }}>
+    <AuthContext.Provider value={{ user, isAdmin, loading, logout, loginWithGoogle, syncAccount }}>
       {children}
     </AuthContext.Provider>
   );

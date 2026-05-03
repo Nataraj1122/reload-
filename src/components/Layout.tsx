@@ -7,13 +7,15 @@ import { formatINR } from '../lib/utils';
 import { db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
+import CustomerAuthModal from './CustomerAuthModal';
 
 export default function Layout() {
   const { cartOpen, setCartOpen, searchOpen, setSearchOpen, cartItems, updateQuantity, removeFromBag, cartTotalCount, cartSubtotal, wishlistItems } = useAppContext();
-  const { user, logout, isAdmin, loading: authLoading, loginWithGoogle } = useAuth();
+  const { user, logout, isAdmin, loading: authLoading } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -185,7 +187,7 @@ export default function Layout() {
              ) : (
                <button 
                  className={`flex items-center gap-1.5 transition-colors text-[10px] uppercase tracking-widest font-bold ${isTransparent ? 'text-zinc-300 hover:text-white' : 'text-zinc-600 hover:text-black'}`} 
-                 onClick={loginWithGoogle}
+                 onClick={() => setIsAuthModalOpen(true)}
                >
                   <User size={20} strokeWidth={1.5} />
                   <span className="hidden md:inline">Sign In</span>
@@ -248,7 +250,7 @@ export default function Layout() {
                   if (user) {
                     logout();
                   } else {
-                    loginWithGoogle();
+                    setIsAuthModalOpen(true);
                   }
                 }} 
                 className="font-serif text-3xl text-zinc-400 text-left flex items-center gap-4"
@@ -273,6 +275,11 @@ export default function Layout() {
           </motion.div>
         </AnimatePresence>
       </main>
+
+      <CustomerAuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+      />
 
       {/* Search Overlay */}
       <AnimatePresence>

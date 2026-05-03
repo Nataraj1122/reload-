@@ -1,24 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Smartphone, Mail, ArrowRight } from 'lucide-react';
+import { X, Smartphone, ArrowRight } from 'lucide-react';
 import { 
-  signInWithPopup, 
-  GoogleAuthProvider, 
   RecaptchaVerifier, 
   signInWithPhoneNumber,
   ConfirmationResult
 } from 'firebase/auth';
-import { auth, db } from '../lib/firebase';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { auth } from '../lib/firebase';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { ADMIN_EMAIL } from '../constants';
 
 declare global {
   interface Window {
     recaptchaVerifier: RecaptchaVerifier;
   }
 }
-
-import { ADMIN_EMAIL } from '../constants';
-import { useNavigate } from 'react-router-dom';
 
 interface CustomerAuthModalProps {
   isOpen: boolean;
@@ -27,6 +24,8 @@ interface CustomerAuthModalProps {
 
 export default function CustomerAuthModal({ isOpen, onClose }: CustomerAuthModalProps) {
   const navigate = useNavigate();
+  const { loginWithGoogle, syncAccount } = useAuth();
+  
   const [authMethod, setAuthMethod] = useState<'google' | 'phone'>('google');
   const [phoneNumber, setPhoneNumber] = useState('+91');
   const [verificationCode, setVerificationCode] = useState('');
@@ -55,58 +54,17 @@ export default function CustomerAuthModal({ isOpen, onClose }: CustomerAuthModal
     }
   };
 
-  const syncUserToFirestore = async (uid: string, data: any) => {
-    try {
-      const userRef = doc(db, 'users', uid);
-      const userSnap = await getDoc(userRef);
-      if (!userSnap.exists()) {
-        await setDoc(userRef, {
-          name: data.name || '',
-          email: data.email || '',
-          phone: data.phone || '',
-          totalOrders: 0,
-          totalSpent: 0,
-          createdAt: serverTimestamp()
-        });
-      } else {
-        // Update existing user with new info if available
-        const existingData = userSnap.data();
-        await setDoc(userRef, {
-          ...existingData,
-          name: data.name || existingData.name || '',
-          email: data.email || existingData.email || '',
-          phone: data.phone || existingData.phone || '',
-          updatedAt: serverTimestamp()
-        }, { merge: true });
-      }
-    } catch (err: any) {
-      console.error("Error syncing user to Firestore:", err);
-      if (err.code === 'permission-denied') {
-         setError('Permission denied saving user data. Check security rules.');
-      }
-      throw err;
-    }
-  };
-
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
       setError('');
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      await syncUserToFirestore(result.user.uid, {
-        email: result.user.email,
-        name: result.user.displayName || '',
-        phone: result.user.phoneNumber || ''
-      });
+      await loginWithGoogle();
+      // AuthContext handles the sync and the redirect fallback
       onClose();
-      if (result.user.email === ADMIN_EMAIL) {
-        navigate('/admin');
-      }
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/popup-blocked') {
-        setError('Popup blocked. Please enable popups and try again.');
+        setError('Popup blocked. Please enable popups or try again (redirect might start).');
       } else {
         setError('Failed to authenticate with Google. Please try again.');
       }
@@ -154,7 +112,7 @@ export default function CustomerAuthModal({ isOpen, onClose }: CustomerAuthModal
       setLoading(true);
       setError('');
       const result = await confirmationResult.confirm(verificationCode);
-      await syncUserToFirestore(result.user.uid, {
+      await syncAccount(result.user, {
         phone: result.user.phoneNumber,
         name: result.user.displayName || '',
         email: result.user.email || ''
