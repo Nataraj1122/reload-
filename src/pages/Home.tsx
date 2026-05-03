@@ -79,23 +79,21 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-black/70"></div>
         </motion.div>
 
-        {/* HERO CONTENT - CENTERED */}
-        <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 min-h-screen">
+        {/* HERO CONTENT - REPOSITIONED DOWN */}
+        <div className="relative z-10 flex flex-col items-center justify-end text-center px-6 pb-32 min-h-screen">
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
             className="flex flex-col items-center"
           >
-            <h1 className="text-white text-6xl md:text-[10rem] font-sans font-bold tracking-tighter mb-4 leading-none">
-              RELOAD
-            </h1>
-            <p className="text-white/80 text-[10px] md:text-sm uppercase tracking-[0.8em] font-medium mb-16 ml-[0.8em]">
+            {/* h1 removed as per user request */}
+            <p className="text-white/90 text-[11px] md:text-sm uppercase tracking-[0.5em] font-medium mb-8 ml-[0.5em]">
               PREMIUM MENSWEAR
             </p>
             <button 
               onClick={() => document.getElementById('trending')?.scrollIntoView({ behavior: 'smooth' })}
-              className="px-16 py-5 rounded-full bg-white text-black font-bold uppercase text-[11px] tracking-[0.3em] shadow-2xl hover:bg-black hover:text-white transition-all duration-500 active:scale-95 translate-y-4"
+              className="px-16 py-5 rounded-full bg-white text-black font-bold uppercase text-[11px] tracking-[0.3em] shadow-2xl hover:bg-black hover:text-white transition-all duration-500 active:scale-95"
             >
               SHOP NOW
             </button>
