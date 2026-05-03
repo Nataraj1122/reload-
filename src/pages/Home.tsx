@@ -10,7 +10,7 @@ import { ProductSkeleton, CategorySkeleton } from '../components/Skeleton';
 import ProductCard from '../components/ProductCard';
 
 const IMAGES = {
-  hero: "https://i.pinimg.com/736x/cf/12/81/cf12814d8f31383e096a20150c5b9fbc.jpg",
+  hero: "https://i.ibb.co/1hBp929/13733681-2435-4874-8009-331bfceb1b58.jpg",
   autumn: "https://lh3.googleusercontent.com/aida/ADBb0ugepjQaXljnUR7WRHCi9bjT-gSW1VD93hSEfHTzWldq2nnDKMtK5D1U58bqgR5Uc7Yuu2bNoR00-I6Ghy3K-Avl1HlGdTfkSvEx-V0k1uO3pA_Nt0GfS2GqG2eJNkiLXq4YL-C0QDezMT-C0JydFkEsXS62Po5QdM259YqRZF_ugNP7RRxwaTESKexEOnRL2Z7cJJ7eh2dwcPzxxQK2ABALjKCztSU8gaZR91o_ay871gfwux7tdyIQJbuE6KJ2-JBc6sebBbMPVQ",
   dolenga: "https://i.pinimg.com/736x/18/22/96/182296e7cfa5cd168a47a34e872b82e1.jpg",
   summer: "https://lh3.googleusercontent.com/aida/ADBb0ugepjQaXljnUR7WRHCi9bjT-gSW1VD93hSEfHTzWldq2nnDKMtK5D1U58bqgR5Uc7Yuu2bNoR00-I6Ghy3K-Avl1HlGdTfkSvEx-V0k1uO3pA_Nt0GfS2GqG2eJNkiLXq4YL-C0QDezMT-C0JydFkEsXS62Po5QdM259YqRZF_ugNP7RRxwaTESKexEOnRL2Z7cJJ7eh2dwcPzxxQK2ABALjKCztSU8gaZR91o_ay871gfwux7tdyIQJbuE6KJ2-JBc6sebBbMPVQ"
@@ -49,6 +49,7 @@ export default function Home() {
 
   const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  const heroScale = useTransform(scrollYProgress, [0, 1], [1, 1.1]);
 
   const scrollTrending = (direction: 'left' | 'right') => {
     if (trendingRef.current) {
@@ -62,39 +63,36 @@ export default function Home() {
 
   return (
     <div className="bg-brand-bone overflow-x-hidden">
-      {/* Hero Section - Reload Cinematic */}
+      {/* Hero Section - Reload Full Screen */}
       <section ref={heroRef} className="relative h-screen w-full bg-black overflow-hidden flex items-center justify-center">
         {/* MAIN IMAGE */}
         <motion.div 
-          style={{ opacity: heroOpacity, y: heroY }}
+          style={{ opacity: heroOpacity, y: heroY, scale: heroScale }}
           className="absolute inset-0 w-full h-full"
         >
           <img 
             src={IMAGES.hero} 
             alt="Reload Hero"
-            className="w-full h-full object-cover object-center"
+            className="w-full h-full object-contain"
           />
           {/* overlay */}
           <div className="absolute inset-0 bg-black/40"></div>
         </motion.div>
 
         {/* HERO CONTENT */}
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-6">
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-end text-center px-6 pb-24">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
             className="flex flex-col items-center"
           >
-            <h1 className="text-white text-5xl md:text-8xl font-sans font-bold tracking-tighter mb-4">
-              RELOAD
-            </h1>
-            <p className="text-white text-[11px] md:text-sm uppercase tracking-[0.5em] font-medium mb-12 opacity-80">
+            <p className="text-white text-[10px] md:text-sm uppercase tracking-[0.5em] font-medium opacity-80 mb-10">
               PREMIUM MENSWEAR
             </p>
             <button 
               onClick={() => document.getElementById('trending')?.scrollIntoView({ behavior: 'smooth' })}
-              className="px-12 py-4 rounded-full bg-white text-black font-bold uppercase text-[11px] tracking-[0.2em] shadow-2xl hover:bg-black hover:text-white transition-all duration-500 active:scale-95"
+              className="px-14 py-4 rounded-full bg-white text-black font-bold uppercase text-[10px] tracking-[0.3em] shadow-2xl hover:bg-black hover:text-white hover:scale-105 transition-all duration-500 active:scale-95 translate-y-0"
             >
               SHOP NOW
             </button>
@@ -103,11 +101,11 @@ export default function Home() {
 
         <motion.div 
           initial={{ opacity: 0 }}
-          animate={{ opacity: 0.3 }}
-          transition={{ delay: 2, duration: 1 }}
-          className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 z-10"
+          animate={{ opacity: 0.5 }}
+          transition={{ trigger: "mount", delay: 2, duration: 1 }}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 z-10"
         >
-          <div className="w-px h-12 bg-gradient-to-b from-white to-transparent"></div>
+          <div className="w-px h-16 bg-gradient-to-b from-white to-transparent opacity-50"></div>
         </motion.div>
       </section>
 
@@ -194,41 +192,48 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Full Width Banner with Animation */}
-      <section className="relative w-full h-[60vh] md:h-[90vh] bg-black overflow-hidden flex items-center justify-center">
-        <motion.div 
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 1.5 }}
-          className="absolute inset-0 w-full h-full"
-        >
-          <img 
-            src="https://i.pinimg.com/736x/18/22/96/182296e7cfa5cd168a47a34e872b82e1.jpg" 
-            alt="Modern Luxury"
-            className="w-full h-full object-cover"
-          />
-          {/* Elegant Dark Overlay */}
-          <div className="absolute inset-0 bg-black/50 backdrop-brightness-75"></div>
-        </motion.div>
-        
-        <div className="relative z-10 flex flex-col items-center justify-center text-white text-center px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
+      {/* Dolenga Modernity - Box with Image */}
+      <section className="py-16 px-6">
+        <div className="max-w-7xl mx-auto flex justify-center">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            transition={{ delay: 0.4, duration: 1, ease: [0.22, 1, 0.36, 1] }}
-            className="flex flex-col items-center"
+            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+            className="w-full md:w-[90%] h-[60vh] md:h-[80vh] rounded-[2.5rem] relative overflow-hidden flex items-center justify-center text-center shadow-2xl"
           >
-            <h3 className="text-4xl md:text-8xl font-serif mb-6 md:mb-10 leading-tight tracking-tight max-w-4xl">
-              Dolenga Modernity
-            </h3>
-            <button 
-              onClick={() => navigate('/shop')}
-              className="bg-white text-black px-10 py-4 uppercase text-[10px] font-bold tracking-[0.3em] hover:bg-black hover:text-white transition-all duration-500 shadow-2xl rounded-full"
-            >
-              Discover More
-            </button>
+            {/* Background Image */}
+            <div className="absolute inset-0">
+               <img 
+                src={IMAGES.dolenga} 
+                alt="Modern Luxury"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/40"></div>
+            </div>
+
+            <div className="relative z-10 flex flex-col items-center px-6">
+              <motion.h2 
+                 initial={{ opacity: 0, y: 20 }}
+                 whileInView={{ opacity: 1, y: 0 }}
+                 viewport={{ once: true }}
+                 transition={{ delay: 0.3, duration: 1 }}
+                 className="text-white text-4xl md:text-8xl font-serif mb-10 leading-[1.1] tracking-tight max-w-4xl"
+              >
+                Dolenga <br /> Modernity
+              </motion.h2>
+              
+              <motion.button 
+                 initial={{ opacity: 0, y: 20 }}
+                 whileInView={{ opacity: 1, y: 0 }}
+                 viewport={{ once: true }}
+                 transition={{ delay: 0.6, duration: 1 }}
+                 onClick={() => navigate('/shop')}
+                 className="bg-white text-black px-12 py-4 rounded-full font-bold uppercase text-[11px] tracking-[0.3em] hover:bg-black hover:text-white transition-all duration-500 shadow-xl"
+              >
+                DISCOVER MORE
+              </motion.button>
+            </div>
           </motion.div>
         </div>
       </section>

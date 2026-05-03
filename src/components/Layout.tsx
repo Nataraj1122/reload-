@@ -82,29 +82,36 @@ export default function Layout() {
       <nav 
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 border-b ${
           isScrolled 
-            ? 'bg-brand-bone/90 backdrop-blur-md py-4 border-zinc-200' 
-            : 'bg-transparent py-6 border-transparent'
+            ? 'bg-white/90 backdrop-blur-md py-4 border-zinc-200 shadow-sm' 
+            : (isTransparent ? 'bg-transparent py-6 border-transparent' : 'bg-white py-6 border-zinc-100')
         }`}
       >
         <div className="max-w-7xl mx-auto px-6 md:px-12 flex justify-between items-center">
-          <div className="hidden md:flex gap-8 items-center list-none">
-            {navItems.map((item) => (
-              <li key={item.name}>
-                <Link 
-                  to={item.path} 
-                  className={`text-[11px] uppercase tracking-[0.2em] font-medium transition-all hover:scale-105 ${
-                    location.pathname === item.path 
-                      ? (isTransparent ? 'text-white border-b border-white pb-0.5' : 'text-black border-b border-black pb-0.5') 
-                      : (isTransparent ? 'text-zinc-300 hover:text-white' : 'text-zinc-600 hover:text-black')
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              </li>
-            ))}
-          </div>
+          <div className="flex items-center gap-12">
+            <Link 
+              to="/" 
+              className={`text-2xl font-bold tracking-[-0.05em] font-serif uppercase transition-colors duration-500 ${isTransparent ? 'text-white' : 'text-black'}`}
+            >
+              RELOAD
+            </Link>
 
-          <Link to="/" className={`text-2xl font-bold tracking-[-0.05em] font-serif uppercase transition-colors ${isTransparent ? 'text-white' : 'text-black'}`}>RELOAD</Link>
+            <div className="hidden md:flex gap-8 items-center list-none">
+              {navItems.map((item) => (
+                <li key={item.name}>
+                  <Link 
+                    to={item.path} 
+                    className={`text-[11px] uppercase tracking-[0.2em] font-medium transition-all hover:scale-105 ${
+                      location.pathname === item.path 
+                        ? (isTransparent ? 'text-white border-b border-white pb-0.5' : 'text-black border-b border-black pb-0.5') 
+                        : (isTransparent ? 'text-zinc-300 hover:text-white' : 'text-zinc-600 hover:text-black')
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                </li>
+              ))}
+            </div>
+          </div>
 
           <div className="flex gap-4 md:gap-6 items-center">
             <button 
