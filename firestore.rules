@@ -1,0 +1,117 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function incoming() { return request.resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-\\+/=]+$'); }
+    
+    function isValidNewsletterSubscription(data) {
+      return data.keys().hasAll(['email', 'subscribedAt']) 
+        && data.keys().size() == 2
+        && data.email is string 
+        && data.email.size() >= 3 
+        && data.email.size() <= 254
+        && data.email.matches('^[^@]+@[^@]+\\.[^@]+$')
+        && data.subscribedAt == request.time;
+    }
+
+    function isValidCategory(data) {
+      return data.keys().hasAll(['name', 'image'])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.image is string && data.image.size() > 0 && data.image.size() <= 500;
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll(['name', 'price', 'categoryId', 'images', 'stock', 'description', 'sizes', 'isTrending', 'isNewArrival'])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 200
+        && data.price is number && data.price >= 0
+        && data.categoryId is string && data.categoryId.size() > 0 && data.categoryId.size() <= 128
+        && data.images is list && data.images.size() > 0 && data.images.size() <= 10 && data.images[0] is string
+        && data.stock is number && data.stock >= 0
+        && data.description is string && data.description.size() <= 2000
+        && data.sizes is list && data.sizes.size() >= 0 && data.sizes.size() <= 20
+        && data.isTrending is bool
+        && data.isNewArrival is bool;
+    }
+
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { 
+      return isSignedIn() && (
+        request.auth.token.email == "varunrathodv@gmail.com" || 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
+      ); 
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll(['userId', 'customerName', 'customerEmail', 'phoneNumber', 'shippingAddress', 'zipCode', 'items', 'totalAmount', 'paymentMethod', 'orderStatus', 'createdAt'])
+        && data.userId is string
+        && data.customerName is string && data.customerName.size() > 0
+        && data.customerEmail is string && data.customerEmail.matches('^[^@]+@[^@]+\\.[^@]+$')
+        && data.phoneNumber is string && data.phoneNumber.size() >= 10
+        && data.shippingAddress is string && data.shippingAddress.size() > 0
+        && data.zipCode is string && data.zipCode.size() > 0
+        && data.items is list && data.items.size() > 0
+        && data.totalAmount is number && data.totalAmount >= 0
+        && data.paymentMethod == 'COD'
+        && data.orderStatus in ['Pending', 'Shipped', 'Delivered', 'Cancelled']
+        && (data.createdAt == request.time || data.createdAt is timestamp);
+    }
+
+    function isValidCustomer(data) {
+      return data.keys().hasAll(['totalOrders', 'totalSpent'])
+        && (!('email' in data.keys()) || (data.email is string && data.email.size() <= 254))
+        && (!('phone' in data.keys()) || (data.phone is string && data.phone.size() <= 20))
+        && (!('name' in data.keys()) || (data.name is string && data.name.size() <= 100))
+        && data.totalOrders is number && data.totalOrders >= 0
+        && data.totalSpent is number && data.totalSpent >= 0;
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isSignedIn(); // allow all signed in users for now as requested, or keep isAdmin if safer. user said "allow write: if request.auth != null"
+    }
+
+    match /orders/{orderId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if false;
+    }
+
+    match /users/{userId} {
+      allow read, write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+
+      match /cart/{itemId} {
+        allow read, write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      }
+
+      match /wishlist/{itemId} {
+        allow read, write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      }
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /newsletter/{subscriptionId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /customers/{customerId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /admins/{adminId} {
+      allow read: if isSignedIn() && request.auth.uid == adminId;
+    }
+  }
+}
