@@ -10,7 +10,7 @@ import { ProductSkeleton, CategorySkeleton } from '../components/Skeleton';
 import ProductCard from '../components/ProductCard';
 
 const IMAGES = {
-  hero: "https://i.ibb.co/1hBp929/13733681-2435-4874-8009-331bfceb1b58.jpg",
+  hero: "https://i.pinimg.com/originals/cf/12/81/cf12814d8f31383e096a20150c5b9fbc.jpg",
   autumn: "https://lh3.googleusercontent.com/aida/ADBb0ugepjQaXljnUR7WRHCi9bjT-gSW1VD93hSEfHTzWldq2nnDKMtK5D1U58bqgR5Uc7Yuu2bNoR00-I6Ghy3K-Avl1HlGdTfkSvEx-V0k1uO3pA_Nt0GfS2GqG2eJNkiLXq4YL-C0QDezMT-C0JydFkEsXS62Po5QdM259YqRZF_ugNP7RRxwaTESKexEOnRL2Z7cJJ7eh2dwcPzxxQK2ABALjKCztSU8gaZR91o_ay871gfwux7tdyIQJbuE6KJ2-JBc6sebBbMPVQ",
   dolenga: "https://i.pinimg.com/736x/18/22/96/182296e7cfa5cd168a47a34e872b82e1.jpg",
   summer: "https://lh3.googleusercontent.com/aida/ADBb0ugepjQaXljnUR7WRHCi9bjT-gSW1VD93hSEfHTzWldq2nnDKMtK5D1U58bqgR5Uc7Yuu2bNoR00-I6Ghy3K-Avl1HlGdTfkSvEx-V0k1uO3pA_Nt0GfS2GqG2eJNkiLXq4YL-C0QDezMT-C0JydFkEsXS62Po5QdM259YqRZF_ugNP7RRxwaTESKexEOnRL2Z7cJJ7eh2dwcPzxxQK2ABALjKCztSU8gaZR91o_ay871gfwux7tdyIQJbuE6KJ2-JBc6sebBbMPVQ"
@@ -80,25 +80,24 @@ export default function Home() {
         </motion.div>
 
         {/* HERO CONTENT - CENTERED */}
-        <div className="relative z-10 flex flex-col items-center justify-center text-center px-6">
+        <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 min-h-screen">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
             className="flex flex-col items-center"
           >
-            <h1 className="text-white text-6xl md:text-9xl font-sans font-bold tracking-tighter mb-2 leading-none">
+            <h1 className="text-white text-6xl md:text-[10rem] font-sans font-bold tracking-tighter mb-4 leading-none">
               RELOAD
             </h1>
-            <p className="text-white/80 text-[10px] md:text-xs uppercase tracking-[0.8em] font-medium mb-12 ml-[0.8em]">
+            <p className="text-white/80 text-[10px] md:text-sm uppercase tracking-[0.8em] font-medium mb-16 ml-[0.8em]">
               PREMIUM MENSWEAR
             </p>
             <button 
               onClick={() => document.getElementById('trending')?.scrollIntoView({ behavior: 'smooth' })}
-              className="px-12 py-4 rounded-full bg-white text-black font-bold uppercase text-[10px] tracking-[0.3em] shadow-2xl hover:bg-black hover:text-white transition-all duration-500 active:scale-95 group relative overflow-hidden"
+              className="px-16 py-5 rounded-full bg-white text-black font-bold uppercase text-[11px] tracking-[0.3em] shadow-2xl hover:bg-black hover:text-white transition-all duration-500 active:scale-95 translate-y-4"
             >
-              <span className="relative z-10">SHOP NOW</span>
-              <div className="absolute inset-0 bg-black translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
+              SHOP NOW
             </button>
           </motion.div>
         </div>
