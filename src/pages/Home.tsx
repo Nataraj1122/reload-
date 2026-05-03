@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
 import { ArrowRight, Heart, X, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useCategories, useProducts } from '../hooks/useData';
 import { useAppContext } from '../context/AppContext';
 import { formatINR } from '../lib/utils';
@@ -21,6 +21,7 @@ export default function Home() {
   const { products, loading: productsLoading } = useProducts();
   const { addToBag, toggleWishlist, isInWishlist } = useAppContext();
   const { hash } = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (hash) {
@@ -185,33 +186,40 @@ export default function Home() {
       </section>
 
       {/* Full Width Banner with Animation */}
-      <section className="py-8 md:py-16">
-        <div className="max-w-7xl mx-auto px-0 md:px-6">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.98 }}
-            whileInView={{ opacity: 1, scale: 1 }}
+      <section className="relative w-full h-[60vh] md:h-[90vh] bg-black overflow-hidden flex items-center justify-center">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1.5 }}
+          className="absolute inset-0 w-full h-full"
+        >
+          <img 
+            src="https://i.pinimg.com/736x/18/22/96/182296e7cfa5cd168a47a34e872b82e1.jpg" 
+            alt="Modern Luxury"
+            className="w-full h-full object-cover"
+          />
+          {/* Elegant Dark Overlay */}
+          <div className="absolute inset-0 bg-black/50 backdrop-brightness-75"></div>
+        </motion.div>
+        
+        <div className="relative z-10 flex flex-col items-center justify-center text-white text-center px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 1 }}
-            className="relative h-[400px] md:h-[600px] bg-black overflow-hidden group"
+            transition={{ delay: 0.4, duration: 1, ease: [0.22, 1, 0.36, 1] }}
+            className="flex flex-col items-center"
           >
-            <img 
-              src={IMAGES.dolenga} 
-              alt="Lifestyle"
-              className="absolute inset-0 w-full h-full object-cover opacity-50 grayscale transition-transform duration-[3000ms]"
-            />
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-6 md:p-8">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.3, duration: 0.8 }}
-              >
-                <h3 className="text-3xl md:text-7xl font-serif mb-4 md:mb-8 leading-tight">Dolenga <br /> Modernity</h3>
-                <button className="bg-white text-black px-8 py-3.5 uppercase text-[9px] font-bold tracking-[0.2em] hover:bg-zinc-100 transition-all">
-                  Discover More
-                </button>
-              </motion.div>
-            </div>
+            <h3 className="text-4xl md:text-8xl font-serif mb-6 md:mb-10 leading-tight tracking-tight max-w-4xl">
+              Modern Luxury <br className="md:hidden" /> Redefined
+            </h3>
+            <button 
+              onClick={() => navigate('/shop')}
+              className="bg-white text-black px-10 py-4 uppercase text-[10px] font-bold tracking-[0.3em] hover:bg-black hover:text-white transition-all duration-500 shadow-2xl rounded-full"
+            >
+              Discover More
+            </button>
           </motion.div>
         </div>
       </section>
