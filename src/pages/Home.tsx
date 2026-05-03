@@ -63,29 +63,35 @@ export default function Home() {
   return (
     <div className="bg-brand-bone overflow-x-hidden">
       {/* Hero Section - Reload Cinematic */}
-      <section ref={heroRef} className="relative h-screen w-full bg-black overflow-hidden">
+      <section ref={heroRef} className="relative h-screen w-full bg-black overflow-hidden flex items-center justify-center">
         {/* MAIN IMAGE */}
         <motion.div 
           style={{ opacity: heroOpacity }}
-          className="w-full h-full flex items-center justify-center p-0"
+          className="absolute inset-0 w-full h-full flex items-center justify-center"
         >
           <img 
             src="https://i.ibb.co/1hBp929/13733681-2435-4874-8009-331bfceb1b58.jpg" 
             alt="Reload Hero"
             className="w-full h-full object-contain"
           />
+          {/* overlay */}
+          <div className="absolute inset-0 bg-black/40"></div>
         </motion.div>
 
-        {/* BUTTON OVERLAY */}
-        <div className="absolute bottom-[12%] w-full z-20 flex justify-center">
+        {/* HERO CONTENT */}
+        <div className="absolute bottom-20 w-full z-10 flex flex-col items-center text-center px-6">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.5 }}
+            transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
+            className="flex flex-col items-center"
           >
+            <p className="text-white text-[13px] md:text-sm uppercase tracking-[0.3em] font-medium mb-8">
+              PREMIUM MENSWEAR
+            </p>
             <button 
               onClick={() => document.getElementById('trending')?.scrollIntoView({ behavior: 'smooth' })}
-              className="px-[32px] py-[14px] rounded-[40px] border-none bg-white text-black font-semibold uppercase text-[11px] tracking-[0.2em] shadow-2xl hover:bg-black hover:text-white transition-all active:scale-95"
+              className="px-10 py-3 rounded-full bg-white text-black font-bold uppercase text-[11px] tracking-[0.15em] shadow-2xl hover:bg-black hover:text-white transition-all duration-500 active:scale-95"
             >
               SHOP NOW
             </button>
