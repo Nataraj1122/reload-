@@ -4,8 +4,7 @@ import { Search, Heart, ShoppingBag, User, Menu, X, Minus, Plus, Trash2, ArrowRi
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { formatINR } from '../lib/utils';
-import { db } from '../lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import CustomerAuthModal from './CustomerAuthModal';
 
@@ -52,14 +51,16 @@ export default function Layout() {
 
     setSubmitting(true);
     try {
-      await addDoc(collection(db, 'newsletter'), {
-        email,
-        subscribedAt: serverTimestamp()
-      });
+      const { error } = await supabase
+        .from('newsletter')
+        .insert([{ email }]);
+      
+      if (error) throw error;
       setSubscribed(true);
       setEmail('');
     } catch (error) {
       console.error('Error subscribing:', error);
+      alert('Failed to subscribe. Please try again.');
     } finally {
         setSubmitting(false);
     }

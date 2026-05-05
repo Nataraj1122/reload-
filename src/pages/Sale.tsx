@@ -1,9 +1,9 @@
 import React from 'react';
-import { useProducts } from '../hooks/useData';
+import { useSupabaseProducts } from '../hooks/useSupabaseData';
 import ProductCard from '../components/ProductCard';
 
 export default function Sale() {
-  const { products, loading } = useProducts();
+  const { products, loading } = useSupabaseProducts();
   // For demo, we'll just show products with price < 4000 as "Sale"
   const saleProducts = products.filter(p => p.price < 4000);
 

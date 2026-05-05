@@ -1,10 +1,10 @@
 import React from 'react';
-import { useCategories } from '../hooks/useData';
+import { useSupabaseCategories } from '../hooks/useSupabaseData';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 
 export default function Collections() {
-  const { categories, loading } = useCategories();
+  const { categories, loading } = useSupabaseCategories();
 
   return (
     <div className="pt-32 pb-24 min-h-screen bg-white">

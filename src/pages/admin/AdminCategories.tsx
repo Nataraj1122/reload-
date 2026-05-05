@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { collection, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
-import { useCategories } from '../../hooks/useData';
+import { supabase } from '../../lib/supabase';
+import { useSupabaseCategories } from '../../hooks/useSupabaseData';
 import { Category } from '../../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Edit2, Trash2, Plus, X, AlertTriangle } from 'lucide-react';
 
 export default function AdminCategories() {
-  const { categories, loading } = useCategories();
+  const { categories, loading } = useSupabaseCategories();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   
@@ -36,10 +35,17 @@ export default function AdminCategories() {
     if (!deletingCategory) return;
     setSubmitting(true);
     try {
-       await deleteDoc(doc(db, 'categories', deletingCategory.id));
+       const { error } = await supabase
+         .from('categories')
+         .delete()
+         .eq('id', deletingCategory.id);
+       
+       if (error) throw error;
        setDeletingCategory(null);
-    } catch (err) {
-       handleFirestoreError(err, OperationType.DELETE, `categories/${deletingCategory.id}`);
+       window.location.reload();
+    } catch (err: any) {
+       console.error("Delete error:", err);
+       alert(`Delete failed: ${err.message}`);
     } finally {
        setSubmitting(false);
     }
@@ -49,23 +55,28 @@ export default function AdminCategories() {
     e.preventDefault();
     setSubmitting(true);
     try {
+      const catData = {
+        name,
+        image_url: image, // Adjusted to match schema
+      };
+
       if (editingCategory) {
-        await updateDoc(doc(db, 'categories', editingCategory.id), {
-          name,
-          image,
-          updatedAt: serverTimestamp()
-        });
+        const { error } = await supabase
+          .from('categories')
+          .update(catData)
+          .eq('id', editingCategory.id);
+        if (error) throw error;
       } else {
-        await addDoc(collection(db, 'categories'), {
-          name,
-          image,
-          updatedAt: serverTimestamp()
-        });
+        const { error } = await supabase
+          .from('categories')
+          .insert([catData]);
+        if (error) throw error;
       }
       setIsModalOpen(false);
-    } catch (err) {
+      window.location.reload();
+    } catch (err: any) {
        console.error('Error saving category:', err);
-       alert('Error saving category. Check console.');
+       alert(`Error saving category: ${err.message}`);
     } finally {
        setSubmitting(false);
     }

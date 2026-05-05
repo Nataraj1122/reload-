@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, getDocs } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { supabase } from '../../lib/supabase';
 import { formatINR } from '../../lib/utils';
-import { Order } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, Users, BadgeIndianRupee, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -19,23 +17,31 @@ export default function AdminDashboard() {
   useEffect(() => {
      const fetchStats = async () => {
          try {
-             const [ordersSnap, customersSnap] = await Promise.all([
-                 getDocs(query(collection(db, 'orders'))),
-                 getDocs(query(collection(db, 'customers')))
-             ]);
+             // Fetch non-cancelled orders for sales and count
+             const { data: ordersData, error: ordersError } = await supabase
+               .from('orders')
+               .select('total_price, status');
              
+             if (ordersError) throw ordersError;
+
+             // Fetch customers count from profiles
+             const { count: customersCount, error: profilesError } = await supabase
+               .from('profiles')
+               .select('*', { count: 'exact', head: true });
+             
+             if (profilesError) throw profilesError;
+
              let totalSales = 0;
-             ordersSnap.forEach(doc => {
-                 const data = doc.data() as Order;
-                 if ((data.status || (data as any).orderStatus || 'Pending').toLowerCase() !== 'cancelled') {
-                    totalSales += data.totalAmount || 0;
+             ordersData?.forEach(order => {
+                 if (order.status?.toLowerCase() !== 'cancelled') {
+                    totalSales += order.total_price || 0;
                  }
              });
 
              setStats({
                  sales: totalSales,
-                 orders: ordersSnap.size,
-                 customers: customersSnap.size
+                 orders: ordersData?.length || 0,
+                 customers: customersCount || 0
              });
          } catch (error) {
              console.error("Error fetching stats:", error);

@@ -1,9 +1,9 @@
 import React from 'react';
-import { useProducts } from '../hooks/useData';
+import { useSupabaseProducts } from '../hooks/useSupabaseData';
 import ProductCard from '../components/ProductCard';
 
 export default function NewArrivals() {
-  const { products, loading } = useProducts();
+  const { products, loading } = useSupabaseProducts();
   const newProducts = products.filter(p => p.isNewArrival);
 
   return (

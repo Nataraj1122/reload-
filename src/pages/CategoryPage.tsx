@@ -2,15 +2,15 @@ import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Heart, X } from 'lucide-react';
-import { useProducts, useCategories } from '../hooks/useData';
+import { useSupabaseProducts, useSupabaseCategories } from '../hooks/useSupabaseData';
 import { useAppContext } from '../context/AppContext';
 import { formatINR } from '../lib/utils';
 import { Product } from '../types';
 
 export default function CategoryPage() {
   const { id } = useParams<{ id: string }>();
-  const { products, loading: productsLoading } = useProducts();
-  const { categories, loading: categoriesLoading } = useCategories();
+  const { products, loading: productsLoading } = useSupabaseProducts();
+  const { categories, loading: categoriesLoading } = useSupabaseCategories();
   const { addToBag, toggleWishlist, isInWishlist } = useAppContext();
   
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);

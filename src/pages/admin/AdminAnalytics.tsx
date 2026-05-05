@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, getDocs } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
-import { Customer, Order } from '../../types';
+import { supabase } from '../../lib/supabase';
+import { Order } from '../../types';
 import { formatINR } from '../../lib/utils';
 import {
   AreaChart,
@@ -20,10 +19,29 @@ export default function AdminAnalytics() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const orderSnap = await getDocs(query(collection(db, 'orders')));
-        const ords: Order[] = [];
-        orderSnap.forEach(doc => ords.push({ id: doc.id, ...doc.data() } as Order));
-        setOrders(ords);
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: true });
+
+        if (error) throw error;
+        
+        const formattedOrders: Order[] = data.map((ord: any) => ({
+          id: ord.id,
+          userId: ord.user_id,
+          customerName: ord.customer_name,
+          customerEmail: ord.customer_email,
+          phoneNumber: ord.phone_number,
+          shippingAddress: ord.shipping_address,
+          zipCode: ord.zip_code || '',
+          paymentMethod: ord.payment_method,
+          totalAmount: ord.total_price,
+          status: ord.status,
+          items: ord.items,
+          createdAt: { toDate: () => new Date(ord.created_at) } as any
+        }));
+
+        setOrders(formattedOrders);
       } catch (err) {
         console.error(err);
       } finally {

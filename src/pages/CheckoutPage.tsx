@@ -4,10 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { formatINR } from '../lib/utils';
-import { db } from '../lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ShoppingBag, ChevronRight, CheckCircle2, Truck, CreditCard } from 'lucide-react';
-import { OperationType, handleFirestoreError } from '../lib/firebase';
+import { supabase } from '../lib/supabase';
 
 export default function CheckoutPage() {
   const { cartItems, cartSubtotal, clearCart, cartTotalCount } = useAppContext();
@@ -19,8 +17,8 @@ export default function CheckoutPage() {
   const [orderId, setOrderId] = useState('');
   
   const [formData, setFormData] = useState({
-    firstName: user?.displayName?.split(' ')[0] || '',
-    lastName: user?.displayName?.split(' ').slice(1).join(' ') || '',
+    firstName: user?.user_metadata?.full_name?.split(' ')[0] || '',
+    lastName: user?.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
     email: user?.email || '',
     phone: '',
     address: '',
@@ -79,43 +77,52 @@ export default function CheckoutPage() {
     }
 
     setLoading(true);
-    console.log("Attempting to place order...", { userId: user.uid, itemsCount: cartItems.length });
+    console.log("Attempting to place order with Supabase...", { userId: user.id, itemsCount: cartItems.length });
 
     try {
-      const orderData = {
-        userId: user.uid,
-        customerName: `${formData.firstName} ${formData.lastName}`,
-        customerEmail: formData.email,
-        phoneNumber: formData.phone,
-        shippingAddress: `${formData.address}, ${formData.city}, ${formData.state}`,
-        zipCode: formData.zipCode,
-        items: cartItems.map(item => ({
-          productId: item.id,
-          productName: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          size: item.size,
-          imageUrl: item.image || 'https://via.placeholder.com/150?text=No+Image'
-        })),
-        totalAmount: cartSubtotal,
-        paymentMethod: 'COD',
-        status: 'Pending',
-        createdAt: serverTimestamp()
-      };
+      const itemsData = cartItems.map(item => ({
+        productId: item.id,
+        productName: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        size: item.size,
+        imageUrl: item.image || 'https://via.placeholder.com/150?text=No+Image'
+      }));
 
-      console.log("Saving order to Firestore...");
-      const docRef = await addDoc(collection(db, 'orders'), orderData);
-      console.log("Order saved successfully! ID:", docRef.id);
+      // SEND TO SUPABASE
+      const { data: supabaseData, error: supabaseError } = await supabase
+        .from('orders')
+        .insert([
+          {
+            user_id: user.id,
+            customer_name: `${formData.firstName} ${formData.lastName}`,
+            customer_email: formData.email,
+            phone_number: formData.phone,
+            shipping_address: `${formData.address}, ${formData.city}, ${formData.state}`,
+            zip_code: formData.zipCode,
+            items: itemsData,
+            total_price: cartSubtotal, // Changed from totalAmount to total_price as per sql schema
+            payment_method: 'COD',
+            status: 'pending',
+            created_at: new Date().toISOString()
+          }
+        ])
+        .select()
+        .single();
+
+      if (supabaseError) throw supabaseError;
       
-      setOrderId(docRef.id);
+      console.log("Order saved to Supabase successfully!", supabaseData);
+      
+      setOrderId(supabaseData.id);
       await clearCart();
+      setSuccess(true);
       
       alert('Order placed successfully!');
-      navigate('/my-orders');
-    } catch (error) {
-      console.error("Error during order placement:", error);
-      handleFirestoreError(error, OperationType.WRITE, 'orders');
-      alert('Failed to place order. Please try again.');
+      // navigate('/my-orders'); // Handled by success state now
+    } catch (error: any) {
+      console.error("Error during Supabase order placement:", error);
+      alert(`Failed to place order: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }

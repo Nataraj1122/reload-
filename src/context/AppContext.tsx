@@ -1,17 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { CartItem, Product, WishlistItem } from '../types';
 import { useAuth } from './AuthContext';
-import { db } from '../lib/firebase';
-import { 
-  collection, 
-  onSnapshot, 
-  doc, 
-  setDoc, 
-  deleteDoc, 
-  query,
-  getDocs,
-  writeBatch
-} from 'firebase/firestore';
+import { supabase } from '../lib/supabase';
 
 interface AppContextType {
   cartOpen: boolean;
@@ -45,56 +35,119 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Sync Cart with Firestore
+  // Sync Cart with Supabase
   useEffect(() => {
     if (!user) {
       localStorage.setItem('cartItems', JSON.stringify(cartItems));
       return;
     }
 
-    const cartRef = collection(db, 'users', user.uid, 'cart');
-    const unsubscribe = onSnapshot(cartRef, (snapshot) => {
-      const items = snapshot.docs.map(doc => doc.data() as CartItem);
-      setCartItems(items);
-    });
+    const fetchCart = async () => {
+      const { data, error } = await supabase
+        .from('cart')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      if (!error && data) {
+        setCartItems(data.map(item => ({
+          id: item.product_id,
+          cartItemId: item.cart_item_id,
+          name: item.name,
+          price: item.price,
+          image: item.image_url,
+          size: item.size,
+          quantity: item.quantity
+        })));
+      }
+    };
 
-    return () => unsubscribe();
-  }, [user]);
+    fetchCart();
 
-  // Sync Wishlist with Firestore
+    const channel = supabase
+      .channel(`user_cart_${user.id}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'cart', 
+        filter: `user_id=eq.${user.id}` 
+      }, () => fetchCart())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
+  // Sync Wishlist with Supabase
   useEffect(() => {
     if (!user) {
       localStorage.setItem('wishlistItems', JSON.stringify(wishlistItems));
       return;
     }
 
-    const wishlistRef = collection(db, 'users', user.uid, 'wishlist');
-    const unsubscribe = onSnapshot(wishlistRef, (snapshot) => {
-      const items = snapshot.docs.map(doc => doc.data() as WishlistItem);
-      setWishlistItems(items);
-    });
+    const fetchWishlist = async () => {
+      const { data, error } = await supabase
+        .from('wishlist')
+        .select('*, products(*)')
+        .eq('user_id', user.id);
+      
+      if (!error && data) {
+        setWishlistItems(data.map(item => ({
+          id: item.products.id,
+          name: item.products.name,
+          price: item.products.price,
+          image: item.products.image_url
+        })));
+      }
+    };
 
-    return () => unsubscribe();
-  }, [user]);
+    fetchWishlist();
+
+    const channel = supabase
+      .channel(`user_wishlist_${user.id}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'wishlist', 
+        filter: `user_id=eq.${user.id}` 
+      }, () => fetchWishlist())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   const addToBag = async (product: Product, size: string) => {
     const cartItemId = `${product.id}-${size}`;
     const existing = cartItems.find((item) => item.cartItemId === cartItemId);
     
-    const newItem: CartItem = existing 
-      ? { ...existing, quantity: existing.quantity + 1 }
-      : { 
+    const quantity = existing ? existing.quantity + 1 : 1;
+    const newItem: CartItem = { 
           id: product.id, 
           cartItemId, 
           name: product.name, 
           price: product.price, 
           image: product.images[0], 
           size, 
-          quantity: 1 
+          quantity
         };
 
     if (user) {
-      await setDoc(doc(db, 'users', user.uid, 'cart', cartItemId), newItem);
+      const { error } = await supabase
+        .from('cart')
+        .upsert({
+          user_id: user.id,
+          cart_item_id: cartItemId,
+          product_id: product.id,
+          name: product.name,
+          price: product.price,
+          image_url: product.images[0],
+          size,
+          quantity
+        }, { onConflict: 'user_id, cart_item_id' });
+      
+      if (error) console.error("Error adding to cart:", error);
     } else {
       setCartItems(prev => {
         if (existing) {
@@ -114,10 +167,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (newQuantity <= 0) return;
 
     if (user) {
-      await setDoc(doc(db, 'users', user.uid, 'cart', cartItemId), {
-        ...item,
-        quantity: newQuantity
-      });
+      const { error } = await supabase
+        .from('cart')
+        .update({ quantity: newQuantity })
+        .eq('user_id', user.id)
+        .eq('cart_item_id', cartItemId);
+      
+      if (error) console.error("Error updating quantity:", error);
     } else {
       setCartItems(prev => prev.map(i => i.cartItemId === cartItemId ? { ...i, quantity: newQuantity } : i));
     }
@@ -125,7 +181,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const removeFromBag = async (cartItemId: string) => {
     if (user) {
-      await deleteDoc(doc(db, 'users', user.uid, 'cart', cartItemId));
+      const { error } = await supabase
+        .from('cart')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('cart_item_id', cartItemId);
+      
+      if (error) console.error("Error removing from cart:", error);
     } else {
       setCartItems((prev) => prev.filter((item) => item.cartItemId !== cartItemId));
     }
@@ -133,13 +195,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = async () => {
     if (user) {
-      const batch = writeBatch(db);
-      const cartRef = collection(db, 'users', user.uid, 'cart');
-      const snapshot = await getDocs(cartRef);
-      snapshot.docs.forEach((doc) => {
-        batch.delete(doc.ref);
-      });
-      await batch.commit();
+      const { error } = await supabase
+        .from('cart')
+        .delete()
+        .eq('user_id', user.id);
+      
+      if (error) console.error("Error clearing cart:", error);
     } else {
       setCartItems([]);
       localStorage.removeItem('cartItems');
@@ -150,16 +211,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const existing = wishlistItems.find(item => item.id === product.id);
     
     if (user) {
-      const docRef = doc(db, 'users', user.uid, 'wishlist', product.id);
       if (existing) {
-        await deleteDoc(docRef);
+        await supabase
+          .from('wishlist')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('product_id', product.id);
       } else {
-        await setDoc(docRef, {
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          image: product.images[0]
-        });
+        await supabase
+          .from('wishlist')
+          .insert({
+            user_id: user.id,
+            product_id: product.id
+          });
       }
     } else {
       setWishlistItems(prev => {

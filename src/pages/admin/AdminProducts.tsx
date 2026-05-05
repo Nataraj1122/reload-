@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
-import { collection, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
-import { useCategories, useProducts } from '../../hooks/useData';
+import { supabase } from '../../lib/supabase';
+import { useSupabaseCategories, useSupabaseProducts } from '../../hooks/useSupabaseData';
 import { Product } from '../../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Edit2, Trash2, Plus, X, AlertTriangle } from 'lucide-react';
 import { formatINR } from '../../lib/utils';
 
 export default function AdminProducts() {
-  const { products, loading: productsLoading } = useProducts();
-  const { categories } = useCategories();
+  const { products, loading: productsLoading } = useSupabaseProducts();
+  const { categories } = useSupabaseCategories();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -59,10 +58,17 @@ export default function AdminProducts() {
     if (!deletingProduct) return;
     setSubmitting(true);
     try {
-       await deleteDoc(doc(db, 'products', deletingProduct.id));
+       const { error } = await supabase
+         .from('products')
+         .delete()
+         .eq('id', deletingProduct.id);
+       
+       if (error) throw error;
        setDeletingProduct(null);
-    } catch (err) {
-       handleFirestoreError(err, OperationType.DELETE, `products/${deletingProduct.id}`);
+       window.location.reload(); // Quick way to refresh for admin
+    } catch (err: any) {
+       console.error("Delete error:", err);
+       alert(`Delete failed: ${err.message}`);
     } finally {
        setSubmitting(false);
     }
@@ -76,28 +82,36 @@ export default function AdminProducts() {
     }
     setSubmitting(true);
     try {
+      const imageUrls = Array.from(new Set(images.split('\n').map(s => s.trim()).filter(Boolean)));
       const productData = {
         name,
         price: Number(price),
-        categoryId,
-        images: Array.from(new Set(images.split('\n').map(s => s.trim()).filter(Boolean))),
-        stock: Number(stock),
+        category_id: categoryId,
+        image_url: imageUrls[0] || '',
+        stock_quantity: Number(stock),
         description,
         sizes: Array.from(new Set(sizes.split(',').map(s => s.trim()).filter(Boolean))),
-        isTrending,
-        isNewArrival,
-        updatedAt: serverTimestamp()
+        is_trending: isTrending,
+        is_new_arrival: isNewArrival,
       };
 
       if (editingProduct) {
-        await updateDoc(doc(db, 'products', editingProduct.id), productData);
+        const { error } = await supabase
+          .from('products')
+          .update(productData)
+          .eq('id', editingProduct.id);
+        if (error) throw error;
       } else {
-        await addDoc(collection(db, 'products'), productData);
+        const { error } = await supabase
+          .from('products')
+          .insert([productData]);
+        if (error) throw error;
       }
       setIsModalOpen(false);
-    } catch (err) {
+      window.location.reload();
+    } catch (err: any) {
        console.error('Error saving product:', err);
-       alert('Error saving product. Check console.');
+       alert(`Error saving product: ${err.message}`);
     } finally {
        setSubmitting(false);
     }

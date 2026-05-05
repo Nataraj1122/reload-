@@ -2,12 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
 import { ArrowRight, Heart, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useCategories, useProducts } from '../hooks/useData';
+import { useSupabaseCategories, useSupabaseProducts } from '../hooks/useSupabaseData';
 import { useAppContext } from '../context/AppContext';
 import { formatINR } from '../lib/utils';
 import { Product } from '../types';
 import { ProductSkeleton, CategorySkeleton } from '../components/Skeleton';
 import ProductCard from '../components/ProductCard';
+import { getSupabaseFileUrl } from '../lib/supabase';
 
 const IMAGES = {
   hero: "https://i.pinimg.com/originals/cf/12/81/cf12814d8f31383e096a20150c5b9fbc.jpg",
@@ -17,11 +18,22 @@ const IMAGES = {
 };
 
 export default function Home() {
-  const { categories, loading: categoriesLoading } = useCategories();
-  const { products, loading: productsLoading } = useProducts();
+  const { categories, loading: categoriesLoading } = useSupabaseCategories();
+  const { products, loading: productsLoading } = useSupabaseProducts();
   const { addToBag, toggleWishlist, isInWishlist } = useAppContext();
   const { hash } = useLocation();
   const navigate = useNavigate();
+  const [heroImg, setHeroImg] = useState(IMAGES.hero);
+
+  useEffect(() => {
+    // Attempt to load hero bg from Supabase banners bucket
+    const supabaseHero = getSupabaseFileUrl('banners', 'hero-bg.jpg');
+    // Basic connectivity check: we don't know if it actually exists without an extra fetch, 
+    // but the URL will be formatted correctly.
+    if (supabaseHero) {
+      setHeroImg(supabaseHero);
+    }
+  }, []);
 
   useEffect(() => {
     if (hash) {
@@ -71,7 +83,7 @@ export default function Home() {
           className="absolute inset-0 w-full h-full"
         >
           <img 
-            src={IMAGES.hero} 
+            src={heroImg} 
             alt="Reload Premium Fashion"
             className="w-full h-full object-cover object-bottom grayscale-[20%] brightness-[0.7]"
           />

@@ -1,21 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Smartphone, ArrowRight } from 'lucide-react';
-import { 
-  RecaptchaVerifier, 
-  signInWithPhoneNumber,
-  ConfirmationResult
-} from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { X, Mail, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ADMIN_EMAIL } from '../constants';
-
-declare global {
-  interface Window {
-    recaptchaVerifier: RecaptchaVerifier;
-  }
-}
+import { supabase } from '../lib/supabase';
 
 interface CustomerAuthModalProps {
   isOpen: boolean;
@@ -24,110 +13,66 @@ interface CustomerAuthModalProps {
 
 export default function CustomerAuthModal({ isOpen, onClose }: CustomerAuthModalProps) {
   const navigate = useNavigate();
-  const { loginWithGoogle, syncAccount } = useAuth();
+  const { loginWithGoogle } = useAuth();
   
-  const [authMethod, setAuthMethod] = useState<'google' | 'phone'>('google');
-  const [phoneNumber, setPhoneNumber] = useState('+91');
-  const [verificationCode, setVerificationCode] = useState('');
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [authMethod, setAuthMethod] = useState<'google' | 'email'>('google');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authType, setAuthType] = useState<'login' | 'signup'>('login');
   
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-       // Reset state when opened
        setAuthMethod('google');
-       setPhoneNumber('+91');
-       setVerificationCode('');
-       setConfirmationResult(null);
+       setEmail('');
+       setPassword('');
+       setAuthType('login');
        setError('');
        setLoading(false);
     }
   }, [isOpen]);
-
-  const setupRecaptcha = () => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        size: 'invisible'
-      });
-    }
-  };
 
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
       setError('');
       await loginWithGoogle();
-      // AuthContext handles the sync and the redirect fallback
       onClose();
     } catch (err: any) {
       console.error("Google Login Error:", err);
-      if (err.code === 'auth/popup-blocked') {
-        setError('Popup blocked. Please enable popups or try clicking again for redirect.');
-      } else if (err.code === 'auth/popup-closed-by-user') {
-        setError('Login cancelled (popup closed).');
-      } else if (err.code === 'auth/cancelled-popup-request') {
-        setError('Login request cancelled.');
+      setError(`Auth Error: ${err.message || 'Unknown error'}`);
+    } finally {
+       setLoading(false);
+    }
+  };
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      if (authType === 'signup') {
+        const { error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+        if (signUpError) throw signUpError;
+        alert('Check your email for the confirmation link!');
+        onClose();
       } else {
-        setError(`Auth Error: ${err.message || 'Unknown error'}. Try opening the site in a new tab if you are using an iframe.`);
-      }
-    } finally {
-       setLoading(false);
-    }
-  };
-
-  const handleSendOTP = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!phoneNumber || phoneNumber.length < 10) {
-       setError("Please enter a valid phone number with country code (e.g. +91...)");
-       return;
-    }
-    
-    try {
-      setLoading(true);
-      setError('');
-      setupRecaptcha();
-      const appVerifier = window.recaptchaVerifier;
-      const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
-      setConfirmationResult(result);
-    } catch (err: any) {
-       console.error("SMS Error:", err);
-       if (err.code === 'auth/invalid-phone-number') {
-          setError('Invalid phone number format.');
-       } else if (err.code === 'auth/too-many-requests') {
-          setError('Too many attempts. Please try again later.');
-       } else {
-          setError('Failed to send OTP. Please check your connection.');
-       }
-       if (window.recaptchaVerifier) {
-           window.recaptchaVerifier.clear();
-           delete (window as any).recaptchaVerifier;
-       }
-    } finally {
-       setLoading(false);
-    }
-  };
-
-  const handleVerifyOTP = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!confirmationResult || !verificationCode) return;
-    try {
-      setLoading(true);
-      setError('');
-      const result = await confirmationResult.confirm(verificationCode);
-      await syncAccount(result.user, {
-        phone: result.user.phoneNumber,
-        name: result.user.displayName || '',
-        email: result.user.email || ''
-      });
-      onClose();
-      if (result.user.email === ADMIN_EMAIL) {
-        navigate('/admin');
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (signInError) throw signInError;
+        onClose();
+        if (email === ADMIN_EMAIL) navigate('/admin');
       }
     } catch (err: any) {
-      console.error(err);
-      setError('Invalid OTP code. Please try again.');
+      setError(err.message || 'Authentication failed');
     } finally {
       setLoading(false);
     }
@@ -164,20 +109,9 @@ export default function CustomerAuthModal({ isOpen, onClose }: CustomerAuthModal
           Access your account
         </p>
 
-        {/* RECAPTCHA CONTAINER (INVISIBLE) */}
-        <div id="recaptcha-container"></div>
-
         {error && (
             <div className="mb-6 p-4 bg-red-50 text-red-600 border border-red-100 text-[11px] uppercase tracking-widest font-bold text-center leading-relaxed">
-              <p className="mb-2">{error}</p>
-              <a 
-                href={window.location.href} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="underline hover:text-red-800"
-              >
-                Try opening in a new tab
-              </a>
+              <p>{error}</p>
             </div>
         )}
 
@@ -204,75 +138,64 @@ export default function CustomerAuthModal({ isOpen, onClose }: CustomerAuthModal
              </div>
 
              <button 
-               onClick={() => setAuthMethod('phone')}
+               onClick={() => setAuthMethod('email')}
                className="group flex items-center justify-center gap-3 w-full border border-zinc-200 px-4 py-4 text-sm font-bold uppercase tracking-widest hover:border-black transition-all"
              >
-               <Smartphone size={18} />
-               Continue with Phone
+               <Mail size={18} />
+               Continue with Email
              </button>
           </div>
         )}
 
-        {authMethod === 'phone' && (
+        {authMethod === 'email' && (
            <div className="flex flex-col gap-6">
-              {!confirmationResult ? (
-                 <form onSubmit={handleSendOTP} className="flex flex-col gap-6">
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-widest font-bold text-zinc-500 mb-2">Phone Number</label>
-                      <input 
-                        type="tel" 
-                        required 
-                        value={phoneNumber}
-                        onChange={e => setPhoneNumber(e.target.value)}
-                        placeholder="+91 9999999999"
-                        className="w-full border border-zinc-200 px-4 py-4 text-sm focus:border-black focus:outline-none transition-colors"
-                      />
-                    </div>
-                    <button 
-                      type="submit" 
-                      disabled={loading}
-                      className="group flex items-center justify-center gap-2 bg-black text-white px-4 py-4 text-sm font-bold uppercase tracking-widest hover:bg-zinc-800 transition-colors disabled:opacity-50"
-                    >
-                      {loading ? 'Sending OTP...' : 'Send Login Code'}
-                      {!loading && <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />}
-                    </button>
-                 </form>
-              ) : (
-                 <form onSubmit={handleVerifyOTP} className="flex flex-col gap-6">
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-widest font-bold text-zinc-500 mb-2">Verification Code</label>
-                      <p className="text-xs text-zinc-500 mb-4">Sent to {phoneNumber}</p>
-                      <input 
-                        type="text" 
-                        required 
-                        value={verificationCode}
-                        onChange={e => setVerificationCode(e.target.value)}
-                        placeholder="123456"
-                        maxLength={6}
-                        className="w-full border border-zinc-200 px-4 py-4 text-2xl tracking-widest text-center focus:border-black focus:outline-none transition-colors"
-                      />
-                    </div>
-                    <button 
-                      type="submit" 
-                      disabled={loading}
-                      className="group flex items-center justify-center gap-2 bg-black text-white px-4 py-4 text-sm font-bold uppercase tracking-widest hover:bg-zinc-800 transition-colors disabled:opacity-50"
-                    >
-                      {loading ? 'Verifying...' : 'Verify & Login'}
-                    </button>
-                 </form>
-              )}
+              <form onSubmit={handleEmailAuth} className="flex flex-col gap-6">
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-zinc-500 mb-2">Email Address</label>
+                  <input 
+                    type="email" 
+                    required 
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="name@example.com"
+                    className="w-full border border-zinc-200 px-4 py-4 text-sm focus:border-black focus:outline-none transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-zinc-500 mb-2">Password</label>
+                  <input 
+                    type="password" 
+                    required 
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full border border-zinc-200 px-4 py-4 text-sm focus:border-black focus:outline-none transition-colors"
+                  />
+                </div>
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  className="group flex items-center justify-center gap-2 bg-black text-white px-4 py-4 text-sm font-bold uppercase tracking-widest hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                >
+                  {loading ? 'Processing...' : (authType === 'login' ? 'Sign In' : 'Sign Up')}
+                  {!loading && <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />}
+                </button>
+              </form>
 
-              <button 
-                 onClick={() => {
-                     setAuthMethod('google');
-                     setConfirmationResult(null);
-                     setVerificationCode('');
-                     setError('');
-                 }}
-                 className="text-[10px] uppercase tracking-widest font-bold text-zinc-400 hover:text-black transition-colors"
-              >
-                 Return to Google Login
-              </button>
+              <div className="flex justify-between items-center">
+                <button 
+                  onClick={() => setAuthType(authType === 'login' ? 'signup' : 'login')}
+                  className="text-[10px] uppercase tracking-widest font-bold text-zinc-500 hover:text-black underline transition-colors"
+                >
+                  {authType === 'login' ? 'Need an account?' : 'Already have an account?'}
+                </button>
+                <button 
+                   onClick={() => setAuthMethod('google')}
+                   className="text-[10px] uppercase tracking-widest font-bold text-zinc-400 hover:text-black transition-colors"
+                >
+                   Back to Google
+                </button>
+              </div>
            </div>
         )}
       </motion.div>

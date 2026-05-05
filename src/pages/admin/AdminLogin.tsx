@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signOut } from 'firebase/auth';
-import { auth } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
-
-import { ADMIN_EMAIL } from '../../constants';
 
 export default function AdminLogin() {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate();
-  const { user, isAdmin, loading, loginWithGoogle } = useAuth();
+  const { user, isAdmin, loading, loginWithGoogle, logout } = useAuth();
 
   useEffect(() => {
     if (!loading && user && isAdmin) {
@@ -28,13 +24,7 @@ export default function AdminLogin() {
       // The context update will trigger the useEffect for redirect if admin
     } catch (err: any) {
       console.error("Login attempt failed:", err);
-      if (err.code === 'auth/network-request-failed') {
-        setError('Network issue. Check your connection or authorized domains.');
-      } else if (err.code === 'auth/popup-blocked') {
-        setError('Login popup blocked. Please allow popups for this site.');
-      } else {
-        setError('Failed to login. Please try again.');
-      }
+      setError(`Failed to login: ${err.message || 'Try opening in a new tab if you are using an iframe.'}`);
       setIsSubmitting(false);
     }
   };
@@ -52,7 +42,7 @@ export default function AdminLogin() {
         {user && !isAdmin && (
            <div className="mb-6 p-4 bg-red-50 text-red-600 text-[11px] uppercase tracking-widest font-bold border border-red-200">
              Your account does not have admin privileges. <br />
-             <button onClick={() => signOut(auth)} className="underline mt-2">Sign out</button>
+             <button onClick={() => logout()} className="underline mt-2">Sign out</button>
            </div>
         )}
 

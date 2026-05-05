@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
-import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
+import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { Order } from '../types';
 import { formatINR } from '../lib/utils';
@@ -17,60 +16,79 @@ export default function MyOrders() {
   useEffect(() => {
     if (!user) return;
 
-    const q = query(
-      collection(db, 'orders'),
-      where('userId', '==', user.uid),
-      orderBy('createdAt', 'desc')
-    );
+    const fetchOrders = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const ords: Order[] = [];
-      snapshot.forEach((doc) => {
-        ords.push({ id: doc.id, ...doc.data() } as Order);
-      });
-      setOrders(ords);
-      setLoading(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, `orders/user/${user.uid}`);
-      setLoading(false);
-    });
+        if (error) throw error;
 
-    return () => unsubscribe();
+        const ords: Order[] = (data || []).map(o => ({
+          id: o.id,
+          userId: o.user_id,
+          customerName: o.customer_name,
+          customerEmail: o.customer_email,
+          phoneNumber: o.phone_number,
+          shippingAddress: o.shipping_address,
+          zipCode: o.zip_code,
+          paymentMethod: o.payment_method,
+          status: o.status,
+          totalAmount: o.total_price,
+          createdAt: { toDate: () => new Date(o.created_at) }, // Mocking Firebase toDate for UI compatibility
+          items: o.items
+        }));
+        
+        setOrders(ords);
+      } catch (error) {
+        console.error("Error fetching Supabase orders:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+
+    // Subscribe to changes
+    const subscription = supabase
+      .channel('orders_channel')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'orders',
+        filter: `user_id=eq.${user.id}`
+      }, () => {
+        fetchOrders();
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [user]);
 
   const cancelOrder = async (orderId: string) => {
     try {
-      console.log("Cancel clicked", orderId);
-      const user = auth.currentUser;
-      if (!user) {
-        alert('Login required');
-        return;
-      }
+      if (!user) return;
 
       setCancellingId(orderId);
-      const orderRef = doc(db, 'orders', orderId);
       
-      // Update Firestore
-      await updateDoc(orderRef, {
-        status: 'cancelled',
-        cancelledAt: serverTimestamp()
-      });
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: 'cancelled' })
+        .eq('id', orderId)
+        .eq('user_id', user.id);
 
-      // 🔥 IMPORTANT: update UI instantly without waiting
-      setOrders(prevOrders =>
-        prevOrders.map(order =>
-          order.id === orderId
-            ? { ...order, status: 'cancelled' }
-            : order
-        )
-      );
+      if (error) throw error;
 
-      console.log("Order cancelled successfully", orderId);
+      // Update UI
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'cancelled' } : o));
       alert('Order cancelled successfully');
-    } catch (error) {
+    } catch (error: any) {
       console.error("Cancel error:", error);
-      handleFirestoreError(error, OperationType.UPDATE, `orders/${orderId}`);
-      alert('Cancel failed');
+      alert(`Cancel failed: ${error.message || 'Unknown error'}`);
     } finally {
       setCancellingId(null);
     }

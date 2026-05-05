@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
+import { supabase } from '../../lib/supabase';
 import { Order } from '../../types';
 import { formatINR } from '../../lib/utils';
 import { ChevronDown, ChevronUp, Package, Clock, Truck, CheckCircle, XCircle } from 'lucide-react';
@@ -13,41 +12,81 @@ export default function AdminOrders() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('All');
 
+  const fetchOrders = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedOrders: Order[] = data.map((ord: any) => ({
+        id: ord.id,
+        userId: ord.user_id,
+        customerName: ord.customer_name,
+        customerEmail: ord.customer_email,
+        phoneNumber: ord.phone_number,
+        shippingAddress: ord.shipping_address,
+        zipCode: ord.zip_code || '',
+        paymentMethod: ord.payment_method,
+        totalAmount: ord.total_price,
+        status: ord.status,
+        items: ord.items,
+        createdAt: { toDate: () => new Date(ord.created_at) } as any,
+        cancelledAt: ord.cancelled_at ? { toDate: () => new Date(ord.cancelled_at) } as any : undefined
+      }));
+
+      setOrders(formattedOrders);
+      setLoading(false);
+    } catch (err: any) {
+      console.error("Supabase error:", err);
+      setError(err.message || "Failed to load orders.");
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      try {
-        const ords: Order[] = [];
-        snapshot.forEach((doc) => {
-          ords.push({ id: doc.id, ...doc.data() } as Order);
-        });
-        setOrders(ords);
-        setLoading(false);
-        setError(null);
-      } catch (err) {
-        console.error("Error processing orders:", err);
-        setError("Failed to process orders data.");
-        setLoading(false);
-      }
-    }, (err) => {
-       console.error("Firestore error:", err);
-       setError("Failed to load orders. You may not have sufficient permissions.");
-       setLoading(false);
-    });
-    return () => unsubscribe();
+    fetchOrders();
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('admin_orders_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        () => {
+          fetchOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const filteredOrders = filter === 'All' 
     ? orders 
-    : orders.filter(o => (o.status || (o as any).orderStatus) === filter);
+    : orders.filter(o => o.status === filter);
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
-      await updateDoc(doc(db, 'orders', id), {
-        status: newStatus
-      });
-    } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, `orders/${id}`);
+      const updateData: any = { status: newStatus };
+      if (newStatus === 'Cancelled') {
+        updateData.cancelled_at = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from('orders')
+        .update(updateData)
+        .eq('id', id);
+
+      if (error) throw error;
+      fetchOrders(); // Refresh local state
+    } catch (err: any) {
+      console.error("Update status error:", err);
+      alert(`Failed to update status: ${err.message}`);
     }
   };
 
